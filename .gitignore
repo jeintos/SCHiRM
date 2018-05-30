@@ -1,0 +1,12 @@
+# ignore compiled python 2 files
+*.pyc
+# ignore compiled python 3 files
+__pycache__
+# ignore everything under results and figs directories
+results/*
+figs/*
+# ... except the artificial files
+!results/.gitkeep
+!figs/.gitkeep
+# ignore pickled model file
+*.pkl
