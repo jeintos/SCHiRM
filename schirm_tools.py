@@ -20,7 +20,7 @@ def define_model(compile_model = False):
             data {
                 int<lower=1>  N;          // number of cells
                 int<lower=1>  M;          // number of inputs
-                int<lower=0>  X[N,M];     // input matrix
+                int<lower=0>  X[M,N];     // input matrix
                 int<lower=0>  y[N];       // output vector
                 real<lower=0> beta0_std;  // std for beta0
                 real<lower=0> beta_std;   // std for beta
@@ -43,20 +43,11 @@ def define_model(compile_model = False):
                 beta    ~ normal(0, beta_std);
                 alpha   ~ normal(0, alpha_std); // half-normal prior
                 // prior for log-parameters of Poisson inputs
-                for (j in 1:M){
-                    for (i in 1:N){
-                        log_CX[i,j] ~ normal(log_mux[j] - 0.5  * log(1 + alpha),
-                                             sqrt(log(1 + alpha)));
-                    }
-                }
+                to_vector(log_CX) ~ normal(to_vector(rep_matrix(log_mux',N)) - 0.5  * log(1 + alpha),sqrt(log(1 + alpha)));
                 log_Cy ~ normal(log_CX*beta + beta0, sqrt(log(1 + alpha)));
                 // likelihood
-                for (i in 1:N){
-                    y[i] ~ poisson_log(log_Cy[i] + log_c[i]);
-                    for (j in 1:M){
-                        X[i,j] ~ poisson_log(log_CX[i,j] + log_c[i]);
-                    }
-                }
+                y ~ poisson_log(log_Cy + log_c);
+                to_array_1d(X) ~ poisson_log(to_vector(log_CX + rep_matrix(log_c, M) ));
             }
             """
         from pystan import StanModel
@@ -72,7 +63,7 @@ def define_model(compile_model = False):
 def run_inference(X,y,prior_params,norm_consts,stan_model,N_iter = 500,N_chains  = 4):
     N, M = X.shape
     # inference
-    dat = {'N': N,'M':M,'X': X,'y': y,'log_c': np.log(norm_consts),
+    dat = {'N': N,'M':M,'X': X.T,'y': y,'log_c': np.log(norm_consts),
            'beta0_std': prior_params['beta0_prior_std'],'beta_std': prior_params['beta_prior_std'],
            'log_mux_mean': prior_params['log_mux_prior_mean'],'log_mux_std': prior_params['log_mux_prior_std'],
            'alpha_std': prior_params['alpha_prior_std']}
