@@ -61,3 +61,5 @@ if compute:
 #    schirm.illust_convergence_diag(rhat,fig_name=name+'rhat')
     
 #expe.illust_AUC_summary(Mall,Mact_all,'','real',result_path_comb)
+#expe.illust_errors(Mall,Mact_all,'',result_path_comb)
+expe.param_est_fig('',result_path_comb)

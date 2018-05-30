@@ -219,3 +219,102 @@ def illust_AUC_summary(MMM,Mact,run_name1,run_name2,result_path_comb):
     plt.xlabel('Number of inputs (number of cell cycle genes)')
     plt.ylabel('AUC')
     plt.title('Real data')
+    
+def illust_errors(Mall,Mact_all,run_name,result_path_comb):
+    n = len(Mall)
+    
+    names = ['SCHiRMpm','OLS', 'LASSO','ENET','RIDGE']
+    names_show = ['SCHiRM','OLS', 'LASSO','ENET','RIDGE']
+    
+    # regression coefficients
+    for i in range(n):
+        M = Mall[i]
+        Mact_temp = Mact_all[i]
+        df = pd.read_csv(result_path_comb+run_name+'res_'    + str(M) + '_' + str(Mact_temp) + '_p1' + '.csv',index_col=0)
+        true_vals = df['beta_true'].as_matrix()
+        for j, name in enumerate(names):
+            error      = np.abs(df[name].as_matrix() - true_vals)**2
+            plt.subplot(5,2,2*j+1)
+            ind = np.argsort(true_vals)
+            plt.scatter(true_vals[ind],error[ind],c='teal',alpha = 0.05)
+            plt.title(names_show[j])
+            if j == 2:
+                plt.ylabel('Squared error')
+            if j < 4:
+                plt.tick_params(
+                                axis='x',          # changes apply to the x-axis
+                                which='both',      # both major and minor ticks are affected
+                                bottom=False,      # ticks along the bottom edge are off
+                                top=False,         # ticks along the top edge are off
+                                labelbottom=False) # labels along the bottom edge are off
+            else:
+                plt.xlabel('True coefficient')
+    
+    # intercept
+    names = ['beta0_mean','beta0_ols', 'beta0_las', 'beta0_ene', 'beta0_rid']      
+    for i in range(n):
+        M = Mall[i]
+        Mact_temp = Mact_all[i]
+        df = pd.read_csv(result_path_comb+run_name+'res_'    + str(M) + '_' + str(Mact_temp) + '_p2' + '.csv',index_col=0)
+        true_vals = df['beta0_true'].as_matrix()
+        for j, name in enumerate(names):
+            error      = np.abs(df[name].as_matrix() - true_vals)**2
+            plt.subplot(5,2,2*j+2)
+            ind = np.argsort(true_vals)
+            plt.scatter(true_vals[ind],error[ind],c='teal',alpha = 0.05)
+            if j < 4:
+                plt.tick_params(
+                                axis='x',          # changes apply to the x-axis
+                                which='both',      # both major and minor ticks are affected
+                                bottom=False,      # ticks along the bottom edge are off
+                                top=False,         # ticks along the top edge are off
+                                labelbottom=False) # labels along the bottom edge are off
+            else:
+                plt.xlabel('True intercept')
+                
+def param_est_fig(run_name,result_path_comb):
+    n_rows = 4
+    n_cols = 5
+    
+    #Mact= np.array([3,4,4,4,4])
+    #MMM = np.array([7,8,12,16,20])
+    Mact= np.array([1,1,2,2,3])
+    MMM = np.array([2,3,4,5,6])
+    n_tests = len(MMM)
+    
+    fig = plt.figure(figsize=(2*n_cols,8))
+    for i in range(n_tests):
+        M = MMM[i]
+        Mact_temp = Mact[i]
+        df1 = pd.read_csv(result_path_comb+run_name+'res_'    + str(M) + '_' + str(Mact_temp) + '_p1' + '.csv',index_col=0)
+        df2 = pd.read_csv(result_path_comb+run_name+'res_'    + str(M) + '_' + str(Mact_temp) + '_p2' + '.csv',index_col=0)
+    
+        # true betas vs est
+        plt.subplot(n_rows,n_cols,i+1)
+        plt.plot([-1,1],[-1,1],'k')
+        plt.scatter(df1['beta_true'].as_matrix(),df1['SCHiRMpm'].as_matrix(),s = 0.2)
+        plt.title('M = ' + str(MMM[i]))
+        if i == 0:
+            plt.xlabel('True $\\beta$')
+            plt.ylabel('Est. $\\beta$')
+        # true beta0 vs est
+        plt.subplot(n_rows,n_cols,i + n_cols + 1)
+        plt.plot([-1,1],[-1,1],'k')
+        plt.scatter(df2['beta0_true'].as_matrix(),df2['beta0_mean'].as_matrix(),s = 0.2)
+        if i == 0:
+            plt.xlabel('True $\\beta_0$')
+            plt.ylabel('Est. $\\beta_0$')
+        
+        # true mu vs est
+        plt.subplot(n_rows,n_cols,i + 2*n_cols + 1)
+        plt.plot([0,100],[0,100],'k')
+        plt.scatter(df1['mux_true'].as_matrix(),df1['mux_mean'].as_matrix(),s = 0.6)
+        if i == 0:
+            plt.xlabel('True $\mu$')
+            plt.ylabel('Est. $\mu$')
+            
+        plt.subplot(n_rows,n_cols,i + 3*n_cols + 1)
+        plt.hist(df2['alpha_mean'].as_matrix())
+        if i == 0:
+            plt.xlabel('$\\alpha$')
+            plt.ylabel('Freq.')
